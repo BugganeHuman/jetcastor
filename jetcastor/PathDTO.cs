@@ -1,6 +1,4 @@
 ﻿namespace jetcastor;
 
-public class PathDTO
-{
+public record PathDTO(int Id, string PathString);
 
-}
