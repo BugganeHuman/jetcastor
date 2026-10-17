@@ -66,6 +66,13 @@ while (true)
 
                             if (File.Exists(path) || Directory.Exists(path))
                             {
+                                if (pathCategory is PathCategory.Backup && !Directory.Exists(path))
+                                {
+                                    AnsiConsole.MarkupLine("\n[orange1]Backup Path can" +
+                                                           " be only directory[/]\n");
+                                    continue;
+                                }
+                                
                                 pathsToAdd.Add(new UserPath(path));
                             }
                             else
@@ -123,6 +130,12 @@ while (true)
 
                         if (File.Exists(updatedPath) || Directory.Exists(updatedPath))
                         {
+                            if (pathCategory is PathCategory.Backup && !Directory.Exists(updatedPath))
+                            {
+                                AnsiConsole.MarkupLine("\n[orange1]Backup Path can" +
+                                                       " be only directory[/]\n");
+                                continue;
+                            }
                             bool isUpdated = PathRepository.UpdatePath(pathCategory, id,
                                                                        updatedPath);
                             if (isUpdated)

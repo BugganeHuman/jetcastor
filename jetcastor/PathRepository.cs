@@ -1,8 +1,7 @@
 ﻿namespace jetcastor;
 
+using Spectre.Console;
 using System.IO;
-using Microsoft.VisualBasic.FileIO;
-
 public enum PathCategory
 {
     Backup,
@@ -32,6 +31,9 @@ public static class PathRepository
         foreach (UserPath path in paths)
         {
             if (File.Exists(path.StringPath) || Directory.Exists(path.StringPath)){
+                if (pathCategory is PathCategory.Backup && !Directory.Exists(path.StringPath))
+                { continue; } // у бэкапов могут быть только папки
+
                 command.Parameters.AddWithValue("$path", path.StringPath);
                 command.ExecuteNonQuery();
                 command.Parameters.Clear();
@@ -60,6 +62,10 @@ public static class PathRepository
     {
         if (File.Exists(path) || Directory.Exists(path))
         {
+            if (pathCategory is PathCategory.Backup && !Directory.Exists(path))
+            {
+                return false;
+            }
             using var connection = DbContext.OpenConnection();
             using var command = connection.CreateCommand();
             string table = PathTableMapper[pathCategory];
