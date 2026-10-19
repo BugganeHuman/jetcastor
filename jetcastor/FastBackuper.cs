@@ -55,44 +55,105 @@ public class FastBackuper
                 {
                     if (!exceptionPaths.Contains(copiedFilePath))
                     {
-                        BackupSingleItem(backupPath, copiedFilePath);
+                        BackupSingleItem(backupPath, copiedFilePath, exceptionPaths);
                     }
                 }
             }
         }
     }
 
-    private void BackupSingleItem (string backupPath, string copiedFilePath)
+    private void BackupSingleItem (string backupPath, string copiedFilePath,
+                                    List<string> exceptionPaths)
     {
-        string destPath = Path.Combine(backupPath, Path.GetFileName(copiedFilePath));
-
-        if (!File.Exists(destPath) || !Directory.Exists(destPath))
+        if (exceptionPaths.Contains(copiedFilePath))
         {
-            if (!File.Exists(destPath))
+            //Console.WriteLine($"skiped exception from - {copiedFilePath}");
+            return;
+        }
+        string destPath = Path.Combine(backupPath, Path.GetFileName(copiedFilePath));
+        bool isDir = File.GetAttributes(copiedFilePath).HasFlag(FileAttributes.Directory);
+
+        if (!File.Exists(destPath) && !isDir || !Directory.Exists(destPath) && isDir)
+        {;
+            if (!isDir)
             {
+                Console.WriteLine($"Creating file from - {copiedFilePath}");
+                try
+                {
                 File.Copy(copiedFilePath, destPath, overwrite: true);
+                }
+                catch(Exception error)
+                {
+                    Console.WriteLine(error);
+                }
             }
-            else if (!Directory.Exists(destPath))
+            else if (isDir)
             {
+                Console.WriteLine($"Creating dir from - {copiedFilePath}");
+                try
+                {
                 FileSystem.CopyDirectory(copiedFilePath, destPath, overwrite: true);
+                }
+                catch (Exception error)
+                {
+                    Console.WriteLine(error);
+                }
             }
         }
         else
         {
             if (File.Exists(destPath))
             {
+                var infoCopiedFile = new FileInfo(copiedFilePath);
+                var infoCopiedFileInBackup = new FileInfo(destPath);
+                if (infoCopiedFile.LastWriteTime != infoCopiedFileInBackup.LastWriteTime ||
+                    infoCopiedFile.Length != infoCopiedFileInBackup.Length)
+                {
+                    Console.WriteLine($"Copying file from - {copiedFilePath}");
+                    try
+                    {
+                    File.Copy(copiedFilePath, destPath, overwrite: true);
+                    }
+                    catch (Exception error)
+                    {
+                        Console.WriteLine(error);
+                    }
+                }
                 //копируем файл если изменилась метадата
             }
             else if (Directory.Exists(destPath))
             {
-                // как ая писал - рекурсивно идем по папке
+                foreach(var item in Directory.EnumerateFileSystemEntries(copiedFilePath))
+                {
+                    BackupSingleItem(destPath, item, exceptionPaths);
+                    /*
+                    var itemDestPath = Path.Combine(destPath, Path.GetFileName(item));
+                    if (!File.Exists(itemDestPath))
+                    {
+                        File.Copy(item, itemDestPath);
+                    }
+                    else if (!Directory.Exists(itemDestPath))
+                    {
+                        FileSystem.CopyDirectory(item, itemDestPath);
+                    }
+                    */
+                }
+                /*
+                 склеиваем destPath и item.name если такое не сущесвтует - если айтем не сущесвтует = копируем,
+                если айтем сущесвтует - если файл чекаем по методате если не совподает копируемб,
+                если сущесвтуеющий айтем папка - заходим в папку и там тот же алгоритм
+                 */
             }
         }
 
 
     }
         
-    public void FastBackup() //{}
+    public void FastBackup()
+    {
+        RunСoordinator(LoadPaths());
+    }
+    
     
 }
 

@@ -159,4 +159,10 @@ while (true)
             }
         }
     }
+// --------------------------------------------------------------------------------------
+    else if (mainMenuChoice == "Fast Backup")
+    {
+        var fastBackuper = new FastBackuper();
+        fastBackuper.FastBackup();
+    }
 }
