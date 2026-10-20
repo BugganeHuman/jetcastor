@@ -1,10 +1,12 @@
 ﻿namespace jetcastor;
 
-using System.IO;
 using Microsoft.VisualBasic.FileIO;
+using Spectre.Console;
+using System.IO;
 
-public class FastBackuper
+public class Backuper
 {
+// --------------------------------------------------------------------------------------
     private Dictionary<PathCategory, List<string>> LoadPaths()
     {
         Dictionary<PathCategory, string> PathTableMapper = new()
@@ -40,7 +42,7 @@ public class FastBackuper
             return selectPaths;
         }
      }
-
+// --------------------------------------------------------------------------------------
     private void RunСoordinator(Dictionary<PathCategory, List<string>> paths)
     {
         List<string> backupPaths = paths[PathCategory.Backup];
@@ -51,17 +53,74 @@ public class FastBackuper
         {
             if (Directory.Exists(backupPath)) 
             {
-                foreach(string copiedFilePath in copiedFilePaths)
+                if (GetDiskFreeSpace(backupPath) >= 10)
                 {
-                    if (!exceptionPaths.Contains(copiedFilePath))
+                    foreach(string copiedFilePath in copiedFilePaths)
                     {
-                        BackupSingleItem(backupPath, copiedFilePath, exceptionPaths);
+                        if (!exceptionPaths.Contains(copiedFilePath))
+                        {
+                            BackupSingleItem(backupPath, copiedFilePath, exceptionPaths);
+                        }
                     }
+                }
+                else 
+                {
+                    AnsiConsole.MarkupLine($"\n[red]Disk {Path.GetPathRoot(backupPath)}" +
+                                           $" Have < 10% free space. Reject[/]\n"); 
                 }
             }
         }
     }
+// --------------------------------------------------------------------------------------
+    private void CopyDirectory (string copiedDirPath, string destPath)
+    {
+        Directory.CreateDirectory(destPath);
+        foreach (string file in Directory.GetFiles(copiedDirPath))
+        {
+            string fileName = Path.GetFileName(file);
+            try
+            {
+            File.Copy(file, Path.Combine(destPath, fileName));
+            }
+            catch { }
+        }
+        foreach (string dir in Directory.GetDirectories(copiedDirPath))
+        {
+            try
+            {
+                var attributes = File.GetAttributes(dir);
+                if (attributes.HasFlag(FileAttributes.ReparsePoint))
+                {
+                    continue;
+                }
+                string destPathOfDir = Path.Combine(destPath, Path.GetFileName(dir));
+                CopyDirectory(dir, destPathOfDir);
 
+            }
+            catch { Console.WriteLine($"dir can't be copying from - {dir}"); }
+        }
+    }
+// --------------------------------------------------------------------------------------
+    private static double GetDiskFreeSpace (string pathOfDisk)
+    {
+        string? root = Path.GetPathRoot(pathOfDisk);
+        if (root is not null)
+        {
+            var drive = new DriveInfo(root);
+            if (drive.IsReady)
+            {
+                double freePercent = (double)drive.AvailableFreeSpace / drive.TotalSize * 100;
+                //Console.WriteLine($"\n\n{root} HAVE {freePercent}%\n\n");
+                return freePercent;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+        return -1;
+    }
+// --------------------------------------------------------------------------------------
     private void BackupSingleItem (string backupPath, string copiedFilePath,
                                     List<string> exceptionPaths)
     {
@@ -82,22 +141,13 @@ public class FastBackuper
                 {
                 File.Copy(copiedFilePath, destPath, overwrite: true);
                 }
-                catch(Exception error)
-                {
-                    Console.WriteLine(error);
-                }
+                catch (UnauthorizedAccessException) { }
+                catch (IOException) { }
             }
             else if (isDir)
             {
                 Console.WriteLine($"Creating dir from - {copiedFilePath}");
-                try
-                {
-                FileSystem.CopyDirectory(copiedFilePath, destPath, overwrite: true);
-                }
-                catch (Exception error)
-                {
-                    Console.WriteLine(error);
-                }
+                CopyDirectory(copiedFilePath, destPath);
             }
         }
         else
@@ -114,41 +164,27 @@ public class FastBackuper
                     {
                     File.Copy(copiedFilePath, destPath, overwrite: true);
                     }
-                    catch (Exception error)
-                    {
-                        Console.WriteLine(error);
-                    }
+                    catch (UnauthorizedAccessException) { }
+                    catch (IOException) { }
                 }
                 //копируем файл если изменилась метадата
             }
             else if (Directory.Exists(destPath))
             {
+                try
+                {
                 foreach(var item in Directory.EnumerateFileSystemEntries(copiedFilePath))
                 {
                     BackupSingleItem(destPath, item, exceptionPaths);
-                    /*
-                    var itemDestPath = Path.Combine(destPath, Path.GetFileName(item));
-                    if (!File.Exists(itemDestPath))
-                    {
-                        File.Copy(item, itemDestPath);
-                    }
-                    else if (!Directory.Exists(itemDestPath))
-                    {
-                        FileSystem.CopyDirectory(item, itemDestPath);
-                    }
-                    */
                 }
-                /*
-                 склеиваем destPath и item.name если такое не сущесвтует - если айтем не сущесвтует = копируем,
-                если айтем сущесвтует - если файл чекаем по методате если не совподает копируемб,
-                если сущесвтуеющий айтем папка - заходим в папку и там тот же алгоритм
-                 */
+                } 
+                catch (UnauthorizedAccessException) { }
+                catch (IOException) { }
+
             }
         }
-
-
     }
-        
+// --------------------------------------------------------------------------------------
     public void FastBackup()
     {
         RunСoordinator(LoadPaths());
@@ -159,6 +195,12 @@ public class FastBackuper
 
 
 
+
+/*
+склеиваем destPath и item.name если такое не сущесвтует - если айтем не сущесвтует = копируем,
+если айтем сущесвтует - если файл чекаем по методате если не совподает копируемб,
+если сущесвтуеющий айтем папка - заходим в папку и там тот же алгоритм
+*/
 
 
 /*
