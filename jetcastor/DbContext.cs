@@ -30,6 +30,17 @@ public static class DbContext
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             path TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS settings (
+            abort_on_low_space INTEGER NOT NULL DEFAULT 1 CHECK (abort_on_low_space IN (0, 1)),
+            min_free_space REAL NOT NULL DEFAULT 10 CHECK (min_free_space BETWEEN 0 AND 100)
+            );
+            
+            INSERT INTO settings (abort_on_low_space, min_free_space) 
+            SELECT 1, 10 
+            WHERE NOT EXISTS (SELECT 1 FROM settings);
+
+
             """;
         command.ExecuteNonQuery();
     }

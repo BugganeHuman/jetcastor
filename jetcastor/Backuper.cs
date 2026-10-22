@@ -48,12 +48,13 @@ public class Backuper
         List<string> backupPaths = paths[PathCategory.Backup];
         List<string> copiedFilePaths = paths[PathCategory.CopiedFile];
         List<string> exceptionPaths = paths[PathCategory.Exception];
-        // возвращает path_to_copied_file и path_to_backup
+        SettingsDTO settingsData = SettingsRepository.GetSettings();
         foreach (string backupPath in backupPaths)
         {
             if (Directory.Exists(backupPath)) 
             {
-                if (GetDiskFreeSpace(backupPath) >= 10)
+                if (settingsData.AbortOnLowSpace && GetDiskFreeSpace(backupPath) >=
+                    settingsData.MinFreeSpace || !settingsData.AbortOnLowSpace)
                 {
                     foreach(string copiedFilePath in copiedFilePaths)
                     {
@@ -66,7 +67,7 @@ public class Backuper
                 else 
                 {
                     AnsiConsole.MarkupLine($"\n[red]Disk {Path.GetPathRoot(backupPath)}" +
-                                           $" Have < 10% free space. Reject[/]\n"); 
+                            $" Have < {settingsData.MinFreeSpace}% free space. Reject[/]\n"); 
                 }
             }
         }

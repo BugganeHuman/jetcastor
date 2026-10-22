@@ -1,5 +1,6 @@
 ﻿using jetcastor;
 using Spectre.Console;
+using Spectre.Console.Rendering;
 
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 Console.InputEncoding = System.Text.Encoding.UTF8;
@@ -20,10 +21,78 @@ while (true)
         new SelectionPrompt<string>()
         .Title("")
         .HighlightStyle(new Style(Color.SeaGreen1))
-        .AddChoices("Fast Backup", "Permament Paths", "Escape")
+        .AddChoices("Fast Backup", "Permament Paths", "Settings", "Escape")
         );
 // --------------------------------------------------------------------------------------
     if (mainMenuChoice == "Escape") { break; }
+// --------------------------------------------------------------------------------------
+    else if (mainMenuChoice == "Settings")
+    {
+        SettingsDTO settingsData = SettingsRepository.GetSettings();
+        while (true)
+        { 
+            //AnsiConsole.Clear();
+
+
+            string settingsMenuChoice = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                .Title("")
+                .HighlightStyle(new Style(Color.Chartreuse1)) //Chartreuse1, LightSlateGrey
+                .AddChoices("Show Settings", "Abort backup if disk space is low",
+                            "Limit of disk min free space", "Back"));
+// --------------------------------------------------------------------------------------
+            if (settingsMenuChoice == "Back") { break; }
+            // --------------------------------------------------------------------------------------
+            else if (settingsMenuChoice == "Show Settings")
+            {
+                AnsiConsole.MarkupLine($"\nAbort backup if disk space" +
+                    $" is low = [yellow]{settingsData.AbortOnLowSpace}[/]");
+                AnsiConsole.MarkupLine($"Limit of disk min free space = " +
+                    $"[yellow]{settingsData.MinFreeSpace}[/]\n");
+            }
+// --------------------------------------------------------------------------------------
+            else if (settingsMenuChoice == "Abort backup if disk space is low")
+            {
+                bool isWillEnabled = AnsiConsole.Confirm("Should the abort backup be enabled?\n" +
+                                                 "Write 'y' to enabled and 'n' to disable", true);
+                bool isUpdated = SettingsRepository.SetAbortOnLowSpace(isWillEnabled);
+                if (isUpdated)
+                {
+                    settingsData.AbortOnLowSpace = isWillEnabled;
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine("\n[orange1]NOTHING UPDATED[/]\n");
+                }
+            }
+// --------------------------------------------------------------------------------------
+            else if (settingsMenuChoice == "Limit of disk min free space")
+            {
+                if (settingsData.AbortOnLowSpace)
+                {
+                    double newLimit = AnsiConsole.Prompt(
+                        new TextPrompt<double>("Write new min limit in range 0 and 100: ")
+                            .Validate(value => value >= 0 && value <=100,
+                            "[red]Limit must be between 0 and 100[/]"));
+
+                    bool isUpdated = SettingsRepository.SetMinFreeSpace(newLimit);
+                    if (isUpdated)
+                    {
+                        settingsData.MinFreeSpace = newLimit;
+                    }
+                    else
+                    {
+                        AnsiConsole.MarkupLine("\n[orange1]NOTHING UPDATED[/]\n");
+                    }
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine("\n[orange1]Abort backup if disk space" +
+                                           " is low is disabled[/]\n");
+                }
+            }
+        }
+    }
 // --------------------------------------------------------------------------------------
     else if (mainMenuChoice == "Permament Paths")
     {
@@ -126,7 +195,7 @@ while (true)
                                 " or [yellow]0[/] to get back: ");
                         string input = Console.ReadLine() ?? "";
                         string updatedPath = input.Trim('"').Trim();
-                        if (updatedPath == "0") { return; }
+                        if (updatedPath == "0") { continue;  }
 
                         if (File.Exists(updatedPath) || Directory.Exists(updatedPath))
                         {
