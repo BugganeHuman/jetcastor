@@ -10,7 +10,6 @@ The application includes:
 
 - **Fast Backup** — quickly back up your configured files and directories.
 - **Path Management** — add, view, update, and delete paths using CRUD operations.
-- **Backup Filters** — configure exclusions and backup behavior.
 - **Settings** — customize backup options, including minimum free disk space requirements.
 
 All paths and settings are stored locally in an **SQLite database**.

@@ -3,7 +3,6 @@
 namespace jetcastor;
 
 
-
 public static class SettingsRepository
 {
     public static SettingsDTO GetSettings ()
@@ -23,8 +22,8 @@ public static class SettingsRepository
         }
         catch
         {
-            AnsiConsole.MarkupLine("[orange1]Error in settings db, will use default setting\n" +
-                                "Abort On Low Space = true, Min Free Size = 10%[/]");
+            AnsiConsole.MarkupLine("\n[orange1]Error in settings db, will using default setting\n" +
+                                "Abort On Low Space = true, Min Free Size = 10%[/]\n");
             return new SettingsDTO(true, 10);
         }
     }

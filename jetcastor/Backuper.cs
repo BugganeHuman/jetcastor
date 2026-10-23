@@ -76,8 +76,8 @@ public class Backuper
                         }
                         else
                         {
-                            AnsiConsole.MarkupLine($"\n[red]Disk {Path.GetPathRoot(backupPath)}" +
-                                    $" Have < {settingsData.MinFreeSpace}% free space. STOP[/]\n");
+                            AnsiConsole.MarkupLine($"\n[red]DISK {Path.GetPathRoot(backupPath)}" +
+                                    $" HAVE < {settingsData.MinFreeSpace}% FREE SPACE. STOP[/]\n");
                             break;
                             
                         }
@@ -85,8 +85,8 @@ public class Backuper
                 }
                 else 
                 {
-                    AnsiConsole.MarkupLine($"\n[red]Disk {Path.GetPathRoot(backupPath)}" +
-                            $" Have < {settingsData.MinFreeSpace}% free space. Reject[/]\n"); 
+                    AnsiConsole.MarkupLine($"\n[red]DISK {Path.GetPathRoot(backupPath)}" +
+                            $" HAVE < {settingsData.MinFreeSpace}% FREE SPACE. REJECT[/]\n"); 
                 }
             }
         }
@@ -107,7 +107,7 @@ public class Backuper
                 }
                 catch
                 {
-                    AnsiConsole.MarkupLine($"[red]FILE {file} DID NOT COPIED[/]");
+                    AnsiConsole.MarkupLine($"\n[red]FILE {file} DID NOT COPIED[/]\n");
                 }
 
             }
@@ -129,7 +129,7 @@ public class Backuper
                 }
                 catch
                 {
-                    Console.WriteLine($"dir can't be copying from - {dir}");
+                    AnsiConsole.MarkupLine($"\n[orange1]DIR CAN'T BE COPYING FROM - {dir}[/]\n");
                 }
             }
         }
@@ -144,7 +144,6 @@ public class Backuper
             if (drive.IsReady)
             {
                 double freePercent = (double)drive.AvailableFreeSpace / drive.TotalSize * 100;
-                //Console.WriteLine($"\n\n{root} HAVE {freePercent}%\n\n");
                 return freePercent;
             }
             else
@@ -160,11 +159,20 @@ public class Backuper
     {
         if (exceptionPaths.Contains(copiedFilePath))
         {
-            //Console.WriteLine($"skiped exception from - {copiedFilePath}");
             return;
         }
         string destPath = Path.Combine(backupPath, Path.GetFileName(copiedFilePath));
-        bool isDir = File.GetAttributes(copiedFilePath).HasFlag(FileAttributes.Directory);
+        bool isDir;
+        try
+        {
+        isDir = File.GetAttributes(copiedFilePath).HasFlag(FileAttributes.Directory);
+        }
+        catch
+        {
+            AnsiConsole.MarkupLine($"\n[orange1]COPIED FILE {copiedFilePath} WAS SKIPPED\n" +
+                                   $"MOST LIKELY IT'S NOT EXISTS[/]\n");
+            return;
+        }
 
         if (!File.Exists(destPath) && !isDir || !Directory.Exists(destPath) && isDir)
         {;
@@ -201,7 +209,6 @@ public class Backuper
                     catch (UnauthorizedAccessException) { }
                     catch (IOException) { }
                 }
-                //копируем файл если изменилась метадата
             }
             else if (Directory.Exists(destPath))
             {
