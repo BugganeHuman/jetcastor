@@ -1,13 +1,12 @@
 ﻿namespace jetcastor;
 
-using Microsoft.VisualBasic.FileIO;
 using Spectre.Console;
 using System.IO;
 
 public class Backuper
 {
 // --------------------------------------------------------------------------------------
-    private Dictionary<PathCategory, List<string>> LoadPaths()
+    private static Dictionary<PathCategory, List<string>> LoadPaths()
     {
         Dictionary<PathCategory, string> PathTableMapper = new()
             {
@@ -43,7 +42,7 @@ public class Backuper
         }
      }
 // --------------------------------------------------------------------------------------
-    private void RunСoordinator(Dictionary<PathCategory, List<string>> paths)
+    private static void RunСoordinator(Dictionary<PathCategory, List<string>> paths)
     {
         List<string> backupPaths = paths[PathCategory.Backup];
         List<string> copiedFilePaths = paths[PathCategory.CopiedFile];
@@ -58,9 +57,30 @@ public class Backuper
                 {
                     foreach(string copiedFilePath in copiedFilePaths)
                     {
+                        string relative = Path.GetRelativePath(copiedFilePath, backupPath);
+                        if (!relative.StartsWith("..") || relative == "." 
+                            || char.IsLetter(relative[0]))
+                        {
+                            AnsiConsole.MarkupLine($"\n[orange1][Chartreuse1]{copiedFilePath}[/] " +
+                                $"was skipped because backup [Chartreuse1]{backupPath}[/] " +
+                                $"is inside of them[/]\n");
+                            continue;
+                        }
+
+                        if (settingsData.AbortOnLowSpace && GetDiskFreeSpace(backupPath) >=
+                            settingsData.MinFreeSpace || !settingsData.AbortOnLowSpace)
+                        {
                         if (!exceptionPaths.Contains(copiedFilePath))
                         {
                             BackupSingleItem(backupPath, copiedFilePath, exceptionPaths);
+                        }
+                        }
+                        else
+                        {
+                            AnsiConsole.MarkupLine($"\n[red]Disk {Path.GetPathRoot(backupPath)}" +
+                                    $" Have < {settingsData.MinFreeSpace}% free space. STOP[/]\n");
+                            break;
+                            
                         }
                     }
                 }
@@ -73,32 +93,42 @@ public class Backuper
         }
     }
 // --------------------------------------------------------------------------------------
-    private void CopyDirectory (string copiedDirPath, string destPath)
+    private static void CopyDirectory (string copiedDirPath, string destPath,
+                                        List<string> exceptionPaths)
     {
         Directory.CreateDirectory(destPath);
         foreach (string file in Directory.GetFiles(copiedDirPath))
         {
-            string fileName = Path.GetFileName(file);
-            try
+            if (!exceptionPaths.Contains(file))
             {
-            File.Copy(file, Path.Combine(destPath, fileName));
+                string fileName = Path.GetFileName(file);
+                try
+                {
+                File.Copy(file, Path.Combine(destPath, fileName));
+                }
+                catch { }
             }
-            catch { }
         }
         foreach (string dir in Directory.GetDirectories(copiedDirPath))
         {
-            try
+            if (!exceptionPaths.Contains(dir))
             {
-                var attributes = File.GetAttributes(dir);
-                if (attributes.HasFlag(FileAttributes.ReparsePoint))
+                try
                 {
-                    continue;
-                }
-                string destPathOfDir = Path.Combine(destPath, Path.GetFileName(dir));
-                CopyDirectory(dir, destPathOfDir);
+                    var attributes = File.GetAttributes(dir);
+                    if (attributes.HasFlag(FileAttributes.ReparsePoint))
+                    {
+                        continue;
+                    }
+                    string destPathOfDir = Path.Combine(destPath, Path.GetFileName(dir));
+                    CopyDirectory(dir, destPathOfDir, exceptionPaths);
 
+                }
+                catch
+                {
+                    Console.WriteLine($"dir can't be copying from - {dir}");
+                }
             }
-            catch { Console.WriteLine($"dir can't be copying from - {dir}"); }
         }
     }
 // --------------------------------------------------------------------------------------
@@ -122,7 +152,7 @@ public class Backuper
         return -1;
     }
 // --------------------------------------------------------------------------------------
-    private void BackupSingleItem (string backupPath, string copiedFilePath,
+    private static void BackupSingleItem (string backupPath, string copiedFilePath,
                                     List<string> exceptionPaths)
     {
         if (exceptionPaths.Contains(copiedFilePath))
@@ -148,7 +178,7 @@ public class Backuper
             else if (isDir)
             {
                 Console.WriteLine($"Creating dir from - {copiedFilePath}");
-                CopyDirectory(copiedFilePath, destPath);
+                CopyDirectory(copiedFilePath, destPath, exceptionPaths);
             }
         }
         else
@@ -193,7 +223,6 @@ public class Backuper
     
     
 }
-
 
 
 

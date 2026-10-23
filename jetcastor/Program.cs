@@ -37,7 +37,7 @@ while (true)
             string settingsMenuChoice = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                 .Title("")
-                .HighlightStyle(new Style(Color.Chartreuse1)) //Chartreuse1, LightSlateGrey
+                .HighlightStyle(new Style(Color.Chartreuse1)) // LightSlateGrey
                 .AddChoices("Show Settings", "Abort backup if disk space is low",
                             "Limit of disk min free space", "Back"));
 // --------------------------------------------------------------------------------------
