@@ -58,15 +58,14 @@ public class Backuper
                     foreach(string copiedFilePath in copiedFilePaths)
                     {
                         string relative = Path.GetRelativePath(copiedFilePath, backupPath);
-                        if (!relative.StartsWith("..") || relative == "." 
-                            || char.IsLetter(relative[0]))
+                        if (!Path.IsPathRooted(relative) && relative != ".." && 
+                            !relative.StartsWith(".." + Path.DirectorySeparatorChar))
                         {
-                            AnsiConsole.MarkupLine($"\n[orange1][Chartreuse1]{copiedFilePath}[/] " +
-                                $"was skipped because backup [Chartreuse1]{backupPath}[/] " +
-                                $"is inside of them[/]\n");
+                            AnsiConsole.MarkupLine($"\n[orange1]{copiedFilePath} " +
+                                $"WAS SKIPPED BECAUSE BACKUP {backupPath} " +
+                                $"IS INSIDE OF THEM[/]\n");
                             continue;
                         }
-
                         if (settingsData.AbortOnLowSpace && GetDiskFreeSpace(backupPath) >=
                             settingsData.MinFreeSpace || !settingsData.AbortOnLowSpace)
                         {
@@ -106,7 +105,11 @@ public class Backuper
                 {
                 File.Copy(file, Path.Combine(destPath, fileName));
                 }
-                catch { }
+                catch
+                {
+                    AnsiConsole.MarkupLine($"[red]FILE {file} DID NOT COPIED[/]");
+                }
+
             }
         }
         foreach (string dir in Directory.GetDirectories(copiedDirPath))

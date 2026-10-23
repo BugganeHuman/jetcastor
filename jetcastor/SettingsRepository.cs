@@ -1,4 +1,6 @@
-﻿namespace jetcastor;
+﻿using Spectre.Console;
+
+namespace jetcastor;
 
 
 
@@ -21,6 +23,8 @@ public static class SettingsRepository
         }
         catch
         {
+            AnsiConsole.MarkupLine("[orange1]Error in settings db, will use default setting\n" +
+                                "Abort On Low Space = true, Min Free Size = 10%[/]");
             return new SettingsDTO(true, 10);
         }
     }
